@@ -39,7 +39,7 @@ int convert(int y, int mn, int mx, byte yTrend, byte heightTrend, int *in)
 void drawTrend(int widthTrend, int heightTrend, int xTrend, byte yTrend, byte cn, int *in)
 {
   //добавляем новое значение
-  in[sizeTrend - 1] = analogRead(cn);
+  in[sizeTrend - 1] = current_mA;
   byte oldX = 0;
   byte oldY = 0 + yTrend;
   int mn = 1000;
@@ -138,7 +138,7 @@ void loop()
     display.clearDisplay();
     ina219values();
     displaydata();
-    drawTrend(90, 30, 0, 33, 5, in1);
+    drawTrend(95, 30, 0, 33, 5, in1);
     display.display();
   }
 }
