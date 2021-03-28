@@ -4,6 +4,7 @@
 #include <Adafruit_INA219.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
+#include "SdFat.h"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -15,9 +16,12 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define sizeTrend 30
 int in1[sizeTrend];
 
+SdFat SD;
 Adafruit_INA219 ina219;
+const byte interruptPin = 4;
 
 unsigned long previousMillis = 0;
+int timer = 300;
 unsigned long interval = 200;
 const int chipSelect = 10;
 float shuntvoltage = 0;
@@ -25,6 +29,9 @@ float busvoltage = 0;
 float current_mA = 0;
 float loadvoltage = 0;
 float energy = 0;
+File TimeFile;
+File VoltFile;
+File CurFile;
 
 //////////////////////////////////// Functions are here //////////////////////////////
 
@@ -44,7 +51,6 @@ void drawTrend(int widthTrend, int heightTrend, int xTrend, byte yTrend, byte cn
   byte oldY = 0 + yTrend;
   int mn = 1000;
   int mx = 0;
-  double k = 0.0;
   //сдвигаем график
   for (byte x = 0; x < (sizeTrend - 1); x++)
   {
@@ -82,33 +88,42 @@ void drawTrend(int widthTrend, int heightTrend, int xTrend, byte yTrend, byte cn
     display.drawRect(xTrend, yTrend, widthTrend, heightTrend, WHITE);
   }
   //вывод минимума и максимума
-  display.setCursor(xTrend + widthTrend + 3, yTrend);
-  display.println(mx);
-  display.setCursor(xTrend + widthTrend + 3, yTrend + heightTrend - 8);
-  display.println(mn);
-  display.setCursor(xTrend + widthTrend + 3, yTrend + (heightTrend / 2) - 4);
-  display.println(in[sizeTrend - 1]); //текущее
-  oldX = 0;
-  oldY = convert(in[0], mn, mx, yTrend, heightTrend, in);
+  // display.setCursor(xTrend + widthTrend + 3, yTrend);
+  // display.println(mx);
+  // display.setCursor(xTrend + widthTrend + 3, yTrend + heightTrend - 8);
+  // display.println(mn);
+  // display.setCursor(xTrend + widthTrend + 3, yTrend + (heightTrend / 2) - 4);
+  // display.println(in[sizeTrend - 1]); //текущее
+  // oldX = 0;
+  // oldY = convert(in[0], mn, mx, yTrend, heightTrend, in);
 }
 
 void displaydata()
 {
+  int count = timer - (millis() / 1000);
+
   display.setCursor(0, 0);
-  display.println(loadvoltage);
-  display.setCursor(35, 0);
-  display.println("V");
-  display.setCursor(50, 0);
+  // display.println(loadvoltage);
+  // display.setCursor(35, 0);
+  // display.println("V");
+  // display.setCursor(50, 0);
   display.println(current_mA);
-  display.setCursor(95, 0);
+  display.setCursor(50, 0);
   display.println("mA");
+  display.drawRect(83, 0, 45, 30, WHITE);
+  display.setCursor(90, 3);
+  display.println("Timer");
+  display.setCursor(87, 20);
+  display.println(count);
+  display.setCursor(107, 20);
+  display.println("sec");
   display.setCursor(0, 10);
   display.println(loadvoltage * current_mA);
-  display.setCursor(65, 10);
+  display.setCursor(50, 10);
   display.println("mW");
   display.setCursor(0, 20);
   display.println(energy);
-  display.setCursor(65, 20);
+  display.setCursor(50, 20);
   display.println("mWh");
 }
 
@@ -120,14 +135,24 @@ void ina219values()
   loadvoltage = busvoltage + (shuntvoltage / 1000);
   energy = energy + loadvoltage * current_mA / 3600;
 }
+
+void button() {
+  Serial.println("button");
+}
 //////////////////////////////////// Functions are here //////////////////////////////
 
 void setup()
 {
+  Serial.begin(9600);
+  // pinMode(interruptPin, INPUT);
+  // attachInterrupt(digitalPinToInterrupt(interruptPin), button, CHANGE);
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.setTextSize(1);
   display.setTextColor(WHITE);
   ina219.begin();
+  SD.begin(chipSelect);
+
+  
 }
 void loop()
 {
@@ -138,7 +163,7 @@ void loop()
     display.clearDisplay();
     ina219values();
     displaydata();
-    drawTrend(95, 30, 0, 33, 5, in1);
+    drawTrend(128, 30, 0, 33, 5, in1);
     display.display();
   }
 }
